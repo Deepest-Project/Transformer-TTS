@@ -7,7 +7,7 @@ This is implemented for [FastSpeech](https://github.com/Deepest-Project/FastSpee
 
 # Training  
 0. Download and extract the [LJ Speech dataset](https://keithito.com/LJ-Speech-Dataset/)  
-1. Using `prepare_data.ipynb`, prepare melspectrogram and text(converted into indices) tensors.
+1. Using `prepare_data.ipynb`, prepare melspectrogram and text (converted into indices) tensors.
 2. `python train.py --gpu='0'`
 
 

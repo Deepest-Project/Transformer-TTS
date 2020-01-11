@@ -33,6 +33,6 @@ return attn_output, attn_output_weights
   - `The differences between attended phoneme positions for adjacent melspectrogram steps are lower than two`  
 
 # Reference
-1.NVIDIA/tacotron2: https://github.com/NVIDIA/tacotron2
+1.NVIDIA/tacotron2: https://github.com/NVIDIA/tacotron2  
 2.espnet: https://github.com/espnet/espnet
 3.soobinseo/Transformer-TTS: https://github.com/soobinseo/Transformer-TTS

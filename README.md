@@ -8,13 +8,13 @@ This is implemented to use in FastSpeech, so I use FFTblock
 3. For later use in fastspeech, I change return values of the "torch.nn.functional.multi_head_attention_forward()"
 4.  
 
-'''python
+```python
 #before
 return attn_output, attn_output_weights.sum(dim=1) / num_heads  
 
 #after  
 return attn_output, attn_output_weights
-'''
+```
             
 # Reference
 1.NVIDIA/tacotron2: https://github.com/NVIDIA/tacotron2

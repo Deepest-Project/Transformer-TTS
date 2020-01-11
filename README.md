@@ -1,14 +1,15 @@
 # Transformer-TTS
 - Implementation of ["Neural Speech Synthesis with Transformer Network"](https://arxiv.org/abs/1809.08895)  
 - This is implemented for [FastSpeech](https://github.com/Deepest-Project/FastSpeech), so I use the `FFTblock` as an encoder.
-  
-## Training curve  
 
 
 ## Training  
 0. Download and extract the [LJ Speech dataset](https://keithito.com/LJ-Speech-Dataset/)  
 1. Using `prepare_data.ipynb`, prepare melspectrogram and text (converted into indices) tensors.
 2. `python train.py --gpu='0'`
+
+
+## Training curve  
 
 
 ## Notice  

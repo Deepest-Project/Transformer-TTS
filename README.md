@@ -1,6 +1,6 @@
 # Transformer-TTS
-Implementation of ["Neural Speech Synthesis with Transformer Network"](https://arxiv.org/abs/1809.08895)  
-This is implemented for [FastSpeech](https://github.com/Deepest-Project/FastSpeech), so I use FFTblock as a encoder.
+- Implementation of ["Neural Speech Synthesis with Transformer Network"](https://arxiv.org/abs/1809.08895)  
+- This is implemented for [FastSpeech](https://github.com/Deepest-Project/FastSpeech), so I use FFTblock as a encoder.
   
 # Training curve  
 

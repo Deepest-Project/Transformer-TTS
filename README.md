@@ -1,6 +1,6 @@
 # Transformer-TTS
 Implementation of ["Neural Speech Synthesis with Transformer Network"](https://arxiv.org/abs/1809.08895)  
-This is implemented to use in FastSpeech, so I use FFTblock  
+This is implemented to use in [FastSpeech](https://github.com/Deepest-Project/FastSpeech), so I use FFTblock as a encoder.
 
 # Notice  
 1. Unlike the original paper, I didn't use the stop token prediction

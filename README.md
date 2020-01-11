@@ -30,7 +30,7 @@ return attn_output, attn_output_weights
 2. For fastspeech, generated melspectrograms and attention matrix should be saved for later.  
 3. Among `num_layers*num_heads` attention matrices, the one with the highest focus rate is saved.
 4. Only data following the below condition is used in fastspeech:  
-    - `The difference between attended phoneme positions for adjacent melspectrogram steps is lower than two`  
+  - `The difference between attended phoneme positions for adjacent melspectrogram steps is lower than two`  
 
 # Reference
 1.NVIDIA/tacotron2: https://github.com/NVIDIA/tacotron2

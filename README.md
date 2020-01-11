@@ -1,12 +1,22 @@
 # Transformer-TTS
 Implementation of ["Neural Speech Synthesis with Transformer Network"](https://arxiv.org/abs/1809.08895)  
 This is implemented for [FastSpeech](https://github.com/Deepest-Project/FastSpeech), so I use FFTblock as a encoder.
+  
+# Training curve  
 
-# Notice  
+
+# Training  
+0. Download and extract the [LJ Speech dataset](https://keithito.com/LJ-Speech-Dataset/)  
+1. Using `prepare_data.ipynb`, prepare melspectrogram and text(converted into indices) tensors.
+2. `python train.py --gpu='0'`
+
+
+
+
 1. Unlike the original paper, I didn't use the stop token prediction
 2. I use additional ["guided attention loss"](https://arxiv.org/pdf/1710.08969.pdf) with a coefficient '10'
 3. For later use in fastspeech, I change return values of the "torch.nn.functional.multi_head_attention_forward()"
-4.  
+4. Batch size is important, so I use a gradient accumulation technique.  
 
 ```python
 #before

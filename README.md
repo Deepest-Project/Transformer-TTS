@@ -12,6 +12,9 @@
 ## Training curve  
 
 
+## Audio Samples    
+
+
 ## Notice  
 1. Unlike the original paper, I didn't use the stop token prediction
 2. I use additional ["guided attention loss"](https://arxiv.org/pdf/1710.08969.pdf) with a coefficient '10'

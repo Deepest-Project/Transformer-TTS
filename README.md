@@ -19,7 +19,7 @@
 
 ## Notice  
 1. Unlike the original paper, I didn't use the stop token prediction
-2. I use additional ["guided attention loss"](https://arxiv.org/pdf/1710.08969.pdf) with a coefficient '10'
+2. I use additional ["guided attention loss"](https://arxiv.org/pdf/1710.08969.pdf) with a coefficient `10`
 3. Batch size is important, so I use gradient accumulation  
    (batch_size: 64 succeed / 32 failed)  
 4. Only when concatenating the input and output of the MultiheadAttention layer, the model learns diagonal alignments   

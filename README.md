@@ -4,10 +4,10 @@
 
 
 ## Training  
-0. Download and extract the [LJ Speech dataset](https://keithito.com/LJ-Speech-Dataset/)  
-1. Set `data_path` in `hparams.py` as the LJSpeech folder  
-2. Using `prepare_data.ipynb`, prepare melspectrogram and text (converted into indices) tensors.
-3. `python train.py --gpu='0'`
+1. Download and extract the [LJ Speech dataset](https://keithito.com/LJ-Speech-Dataset/)  
+2. Set `data_path` in `hparams.py` as the LJSpeech folder  
+3. Using `prepare_data.ipynb`, prepare melspectrogram and text (converted into indices) tensors.
+4. `python train.py --gpu='0'`
 
 
 ## Training curve  
@@ -27,10 +27,11 @@
 2. Dynamic batch  
 
 ## Fastspeech  
-0. For fastspeech, generated melspectrograms and attention matrix should be saved for later.  
-0-1. Set `teacher_path` in `hparams.py` and make `alignments` and `targets` directory there.  
-0-2. Using `prepare_fastspeech.ipynb`, prepare alignmetns and targets.  
-1. For later use in fastspeech, I change return values of the "torch.nn.functional.multi_head_attention_forward()"  
+1. For fastspeech, generated melspectrograms and attention matrix should be saved for later.  
+1-1. Set `teacher_path` in `hparams.py` and make `alignments` and `targets` directory there.  
+1-2. Using `prepare_fastspeech.ipynb`, prepare alignmetns and targets.  
+  
+2. For later use in fastspeech, I change return values of the "torch.nn.functional.multi_head_attention_forward()"  
 ```python
 #before
 return attn_output, attn_output_weights.sum(dim=1) / num_heads  
@@ -38,8 +39,8 @@ return attn_output, attn_output_weights.sum(dim=1) / num_heads
 #after  
 return attn_output, attn_output_weights
 ```  
-2. Among `num_layers*num_heads` attention matrices, the one with the highest focus rate is saved.
-3. Only the data that meets the below condition is used in fastspeech:  
+3. Among `num_layers*num_heads` attention matrices, the one with the highest focus rate is saved.
+4. Only the data that meets the below condition is used in fastspeech:  
   - `The differences between attended phoneme positions for adjacent melspectrogram steps are lower than two`  
 
 ## Reference

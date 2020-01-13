@@ -70,4 +70,4 @@ class TextMelCollate():
             mel_padded[i, :, :mel.size(1)] = mel
             output_lengths[i] = mel.size(1)
 
-        return text_padded, input_lengths, F.pad(mel_padded, (5,10)), output_lengths
+        return text_padded, input_lengths, mel_padded, output_lengths

@@ -45,8 +45,8 @@ n_layers=6
 lr=0.05 # ~384^-0.5 = 0.05
 warmup_steps=4000
 grad_clip_thresh=1.0
-batch_size=[48, 36, 30, 26, 24, 21, 20, 18, 17, 16]
-accumulation=2
+batch_size=16
+accumulation=4
 iters_per_plot=1000
 iters_per_checkpoint=10000
 train_steps = 200000

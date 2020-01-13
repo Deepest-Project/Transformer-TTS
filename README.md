@@ -5,9 +5,10 @@
 
 ## Training  
 1. Download and extract the [LJ Speech dataset](https://keithito.com/LJ-Speech-Dataset/)  
-2. Set `data_path` in `hparams.py` as the LJSpeech folder  
-3. Using `prepare_data.ipynb`, prepare melspectrogram and text (converted into indices) tensors.
-4. `python train.py --gpu='0'`
+2. Make `preprocessed` folder in LJSpeech directory and make `sequence` & `melspectrogram` folder in the `preprocessed` folder  
+3. Set `data_path` in `hparams.py` as the LJSpeech folder  
+4. Using `prepare_data.ipynb`, prepare melspectrogram and text (converted into indices) tensors.  
+5. `python train.py --gpu='0'`  
 
 
 ## Training curve  

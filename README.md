@@ -19,7 +19,8 @@
 ## Notice  
 1. Unlike the original paper, I didn't use the stop token prediction
 2. I use additional ["guided attention loss"](https://arxiv.org/pdf/1710.08969.pdf) with a coefficient '10'
-3. Batch size is important, so I use gradient accumulation (batch_size==64 succeed, but 32 failed)  
+3. Batch size is important, so I use gradient accumulation  
+   (batch_size: 64 succeed / 32 failed)  
 
 ## TODO
 1. Weighted Stop token prediction  

@@ -22,6 +22,7 @@
 2. I use additional ["guided attention loss"](https://arxiv.org/pdf/1710.08969.pdf) with a coefficient '10'
 3. Batch size is important, so I use gradient accumulation  
    (batch_size: 64 succeed / 32 failed)  
+4. Only when concatenating the input and output of the MultiheadAttention layer, it works  
 
 ## TODO
 1. Weighted Stop token prediction  
@@ -29,7 +30,7 @@
 
 ## Fastspeech  
 1. For fastspeech, generated melspectrograms and attention matrix should be saved for later.  
-1-1. Set `teacher_path` in `hparams.py` and make `alignments` and `targets` directory there.  
+1-1. Set `teacher_path` in `hparams.py` and make `alignments` and `targets` directories there.  
 1-2. Using `prepare_fastspeech.ipynb`, prepare alignmetns and targets.  
   
 2. For later use in fastspeech, I change return values of the "torch.nn.functional.multi_head_attention_forward()"  

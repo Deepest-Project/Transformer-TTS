@@ -12,6 +12,10 @@
 
 
 ## Training curve  
+<img src="figures/alpha1.JPG" height="200">  
+<img src="figures/alpha2.JPG" height="200">  
+<img src="figures/train_loss.JPG" height="200">  
+<img src="figures/val_loss.JPG" height="200">  
 
 
 ## Audio Samples    

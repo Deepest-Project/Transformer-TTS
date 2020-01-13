@@ -28,6 +28,8 @@
 
 ## Fastspeech  
 0. For fastspeech, generated melspectrograms and attention matrix should be saved for later.  
+0-1. Set `teacher_path` in `hparams.py` and make `alignments` and `targets` directory there.  
+0-2. Using `prepare_fastspeech.ipynb`, prepare alignmetns and targets.  
 1. For later use in fastspeech, I change return values of the "torch.nn.functional.multi_head_attention_forward()"  
 ```python
 #before

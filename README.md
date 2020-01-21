@@ -17,8 +17,8 @@
 
 
 ## Training plots (blue: batch_size:64 / orange: batch_size:32 / red: batch_size:16)  
-<img src="figures/train_plots.JPG" height="200">
-<img src="figures/val_plots.JPG" height="200">
+<img src="figures/train_plots.JPG" height="300">
+<img src="figures/val_plots.JPG" height="300">
 
 
 ## Audio Samples    

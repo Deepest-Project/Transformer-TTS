@@ -22,7 +22,7 @@
 
 
 ## Audio Samples    
-
+You can hear the audio samples [here](https://deepest-project.github.io/Transformer-TTS/)
 
 ## Notice  
 1. Unlike the original paper, I didn't use the stop token prediction

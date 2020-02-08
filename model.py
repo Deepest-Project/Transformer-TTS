@@ -182,7 +182,6 @@ class Model(nn.Module):
     def forward(self, text, melspec, text_lengths=None, mel_lengths=None):
         ### Size ###
         B, L, T = text.size(0), text_lengths.max().item(), mel_lengths.max().item()
-        text, melspec = text[:,:L], melspec[:,:,:T] # Parallel
         
         ### Positional embedding ###
         position_embedding = text.new_tensor(self.pe, dtype=torch.float)

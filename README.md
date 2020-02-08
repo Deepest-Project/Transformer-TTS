@@ -1,13 +1,13 @@
 # Transformer-TTS
 - Implementation of ["Neural Speech Synthesis with Transformer Network"](https://arxiv.org/abs/1809.08895)  
-- This is implemented for [FastSpeech](https://github.com/Deepest-Project/FastSpeech), so I use the `FFTblock` as an encoder.
+- This is implemented for [FastSpeech](https://github.com/Deepest-Project/FastSpeech)  
 
 
 ## Training  
 1. Download and extract the [LJ Speech dataset](https://keithito.com/LJ-Speech-Dataset/)  
 2. Set `data_path` in `hparams.py` as the LJSpeech folder  
-3. Using `prepare_data.ipynb`, prepare melspectrogram and text (converted into indices) tensors.
-4. `python train.py --gpu='0'`
+3. Using `prepare_data.ipynb`, prepare melspectrogram and text (converted into indices) tensors.  
+4. `python train.py --gpu='0'`  
 
 
 ## Training curve  
@@ -17,14 +17,11 @@
 
 
 ## Notice  
-1. Unlike the original paper, I didn't use the stop token prediction
-2. I use additional ["guided attention loss"](https://arxiv.org/pdf/1710.08969.pdf) with a coefficient '10'
-3. Batch size is important, so I use gradient accumulation  
-   (batch_size: 64 succeed / 32 failed)  
+1. I use additional ["guided attention loss"](https://arxiv.org/pdf/1710.08969.pdf)  
+2. Batch size is important, so I use gradient accumulation  
 
 ## TODO
-1. Weighted Stop token prediction  
-2. Dynamic batch  
+1. Dynamic batch  
 
 ## Fastspeech  
 1. For fastspeech, generated melspectrograms and attention matrix should be saved for later.  
@@ -39,9 +36,7 @@ return attn_output, attn_output_weights.sum(dim=1) / num_heads
 #after  
 return attn_output, attn_output_weights
 ```  
-3. Among `num_layers*num_heads` attention matrices, the one with the highest focus rate is saved.
-4. Only the data that meets the below condition is used in fastspeech:  
-  - `The differences between attended phoneme positions for adjacent melspectrogram steps are lower than two`  
+3. Among `num_layers*num_heads` attention matrices, the one with the highest focus rate is saved.  
 
 ## Reference
 1.NVIDIA/tacotron2: https://github.com/NVIDIA/tacotron2  

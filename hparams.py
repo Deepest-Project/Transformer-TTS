@@ -6,7 +6,7 @@ from text import symbols
 ################################
 seed=1234
 output_directory = 'training_log'
-log_directory = 'waveglow_char_parallel'
+log_directory = 'waveglow_char'
 data_path = '/media/disk1/lyh/LJSpeech-1.1/waveglow'
 teacher_path = '/media/disk1/lyh/fastspeech'
 
@@ -23,14 +23,14 @@ filter_length=1024
 hop_length=256
 win_length=1024
 n_mel_channels=80
-mel_fmin=80.0 # waveglow:0
-mel_fmax=7600.0 # waveglow:8000
+mel_fmin=0
+mel_fmax=8000
 
 ################################
 # Model Parameters             #
 ################################
 n_symbols=len(symbols)
-data_type='char_seq' # 'phone_seq'
+data_type='char_seq' # or 'phone_seq'
 symbols_embedding_dim=256
 hidden_dim=256
 dprenet_dim=256

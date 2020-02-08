@@ -8,8 +8,10 @@ class Linear(nn.Module):
         super(Linear, self).__init__()
         self.linear_layer = nn.Linear(in_dim, out_dim, bias=bias)
         
+        
         nn.init.xavier_uniform_(self.linear_layer.weight,
                                 gain=nn.init.calculate_gain(w_init_gain))
+        
 
     def forward(self, x):
         return self.linear_layer(x)
@@ -37,8 +39,10 @@ class Conv1d(nn.Module):
                               dilation=dilation,
                               bias=bias)
         
+        
         nn.init.xavier_uniform_(self.conv.weight,
                                 gain=nn.init.calculate_gain(w_init_gain))
+        
 
     def forward(self, x):
         x = self.conv(x)

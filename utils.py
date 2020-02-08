@@ -1,6 +1,6 @@
 import hparams
 from torch.utils.data import DataLoader
-from data_utils import TextMelLoader, TextMelCollate
+from data_utils import TextMelSet, TextMelCollate
 import torch
 from text import *
 import matplotlib.pyplot as plt
@@ -8,8 +8,8 @@ import matplotlib.pyplot as plt
 
 def prepare_dataloaders(hparams):
     # Get data, data loaders and collate function ready
-    trainset = TextMelLoader(hparams.training_files, hparams)
-    valset = TextMelLoader(hparams.validation_files, hparams)
+    trainset = TextMelSet(hparams.training_files, hparams)
+    valset = TextMelSet(hparams.validation_files, hparams)
     collate_fn = TextMelCollate()
 
     train_loader = DataLoader(trainset,
@@ -20,7 +20,6 @@ def prepare_dataloaders(hparams):
                               collate_fn=collate_fn)
     
     val_loader = DataLoader(valset,
-                            num_workers=1,
                             batch_size=hparams.batch_size,
                             collate_fn=collate_fn)
     
@@ -38,3 +37,10 @@ def save_checkpoint(model, optimizer, learning_rate, iteration, filepath):
 def lr_scheduling(opt, step, init_lr=hparams.lr, warmup_steps=hparams.warmup_steps):
     opt.param_groups[0]['lr'] = init_lr * min(step ** -0.5, step * warmup_steps ** -1.5)
     return
+
+
+def get_mask_from_lengths(lengths):
+    max_len = torch.max(lengths).item()
+    ids = lengths.new_tensor(torch.arange(0, max_len))
+    mask = (lengths.unsqueeze(1) <= ids).to(torch.bool)
+    return mask

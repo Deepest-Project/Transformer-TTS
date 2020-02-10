@@ -19,10 +19,15 @@
 <img src="figures/l1_loss.JPG" height="200"> <img src="figures/val_l1_loss.JPG" height="200">  
 
 ## Alignments  
-<img src="figures/enc_alignments.JPG" height="200">  
+- Encoder Alignments  
+<img src="figures/enc_alignments.JPG" height="600">  
+- Stop prediction loss (train / val)  
 <img src="figures/dec_alignments.JPG" height="200">  
+- Stop prediction loss (train / val)  
 <img src="figures/enc_dec_alignments.JPG" height="200">  
+- Stop prediction loss (train / val)  
 <img src="figures/melspec.JPG" height="200">  
+- Stop prediction loss (train / val)  
 <img src="figures/stop_prediction.JPG" height="200">  
 
 ## Audio Samples    

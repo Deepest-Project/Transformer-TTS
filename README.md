@@ -1,6 +1,11 @@
 # Transformer-TTS
 - Implementation of ["Neural Speech Synthesis with Transformer Network"](https://arxiv.org/abs/1809.08895)  
 - This is implemented for [FastSpeech](https://github.com/Deepest-Project/FastSpeech)  
+  
+(2020/02/10)  
+- I was able to finish this implementation by completing the Stop token prediction and remove the concatenation of inputs and outputs of multihead attention.  
+- However, the alignments of this implementation are less diagonal, so it can not generate proper alignments for [fastspeech](https://github.com/Deepest-Project/FastSpeech)  
+- As a result, I failed to train the fastspeech with this implementation :(  
 
 
 ## Training  

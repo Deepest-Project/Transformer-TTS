@@ -4,10 +4,11 @@ import torch.nn as nn
 import torch.nn.functional as F
 from model import Model
 import hparams
+import random
 from text import *
 from torch.utils.tensorboard import SummaryWriter
 from loss import TransformerLoss
-from plot_image import plot_image
+from plot_image import *
 from utils import prepare_dataloaders, save_checkpoint, lr_scheduling
 
 
@@ -17,38 +18,66 @@ def validate(model, criterion, val_loader, iteration, writer):
         n_data, val_loss = 0, 0
         for i, batch in enumerate(val_loader):
             n_data += len(batch[0])
-            text_padded, text_lengths, mel_padded, mel_lengths = [
+            text_padded, text_lengths, mel_padded, mel_lengths, gate_padded = [
                 x.cuda() for x in batch
             ]
-            mel_out, mel_out_post, alignments, _, _ = model(text_padded,
-                                                            mel_padded,
-                                                            text_lengths,
-                                                            mel_lengths)
-            alignments = [ align.mean(dim=1) for align in alignments ]
-            
-            loss = criterion((mel_out, mel_out_post),
-                             (mel_padded),
-                             (alignments, text_lengths, mel_lengths))
+            mel_out, mel_out_post, enc_alignments, dec_alignments, enc_dec_alignments, gate_out = model(text_padded,
+                                                                                                        mel_padded,
+                                                                                                        text_lengths,
+                                                                                                        mel_lengths)
+
+            mel_loss, bce_loss, guide_loss = criterion((mel_out, mel_out_post, gate_out),
+                                                       (mel_padded, gate_padded),
+                                                       (enc_dec_alignments, text_lengths, mel_lengths))
+            loss = mel_loss+bce_loss+guide_loss
             val_loss += loss.item() * len(batch[0])
-            
+
         val_loss /= n_data
 
-    writer.add_scalar('val_loss', val_loss,
+    writer.add_scalar('val_mel_loss', mel_loss.item(),
+                      global_step=iteration//hparams.accumulation)
+    writer.add_scalar('val_bce_loss', bce_loss.item(),
+                      global_step=iteration//hparams.accumulation)
+    writer.add_scalar('val_guide_loss', guide_loss.item(),
                       global_step=iteration//hparams.accumulation)
     
-    fig = plot_image(mel_padded, 
-                     mel_out_post,
-                     mel_out,
-                     alignments,
-                     text_padded,
-                     mel_lengths, 
-                     text_lengths)
-    writer.add_figure('Validation plots', fig,
+    mel_fig = plot_melspec(mel_padded,
+                           mel_out,
+                           mel_out_post,
+                           mel_lengths,
+                           text_lengths)
+    writer.add_figure('Validation melspec', mel_fig,
                       global_step=iteration//hparams.accumulation)
-    writer.flush()
+
+    enc_align_fig = plot_alignments(enc_alignments,
+                                    text_padded,
+                                    mel_lengths,
+                                    text_lengths,
+                                   'enc')
+    writer.add_figure('Validation enc_alignments', enc_align_fig,
+                      global_step=iteration//hparams.accumulation)
+
+    dec_align_fig = plot_alignments(dec_alignments,
+                                    text_padded,
+                                    mel_lengths,
+                                    text_lengths,
+                                   'dec')
+    writer.add_figure('Validation dec_alignments', dec_align_fig,
+                      global_step=iteration//hparams.accumulation)
+
+    enc_dec_align_fig = plot_alignments(enc_dec_alignments,
+                                        text_padded,
+                                        mel_lengths,
+                                        text_lengths,
+                                       'enc_dec')
+    writer.add_figure('Validation enc_dec_alignments', enc_dec_align_fig,
+                      global_step=iteration//hparams.accumulation)
+    
+    gate_fig = plot_gate(gate_out)
+    writer.add_figure('Validation gate_out', gate_fig,
+                      global_step=iteration//hparams.accumulation)
     
     model.train()
-    
     
 def main():
     train_loader, val_loader, collate_fn = prepare_dataloaders(hparams)
@@ -60,7 +89,6 @@ def main():
                                  eps=1e-09)
     criterion = TransformerLoss()
 
-
     logging_path=f'{hparams.output_directory}/{hparams.log_directory}'
     if os.path.exists(logging_path):
         raise Exception('The experiment already exists')
@@ -68,28 +96,23 @@ def main():
         os.mkdir(logging_path)
         writer = SummaryWriter(logging_path)
 
-
     iteration, loss = 0, 0
     model.train()
     print("Training Start!!!")
     while iteration < (hparams.train_steps*hparams.accumulation):
         for i, batch in enumerate(train_loader):
-            text_padded, text_lengths, mel_padded, mel_lengths = [
+            text_padded, text_lengths, mel_padded, mel_lengths, gate_padded = [
                 x.cuda() for x in batch
             ]
-            mel_out, mel_out_post, alignments, alpha1, alpha2 = model(text_padded, 
-                                                                      mel_padded, 
-                                                                      text_lengths,
-                                                                      mel_lengths)
-            '''
-            For later use in fastspeech,
-            I change return values of the "torch.nn.functional.multi_head_attention_forward()"
-            : attn_output_weights.sum(dim=1) / num_heads -> attn_output_weights
-            '''
-            alignments = [ align.mean(dim=1) for align in alignments ]
-            sub_loss = criterion((mel_out, mel_out_post),
-                                 (mel_padded),
-                                 (alignments, text_lengths, mel_lengths))/hparams.accumulation
+            mel_out, mel_out_post, enc_alignments, dec_alignments, enc_dec_alignments, gate_out = model(text_padded,
+                                                                                                        mel_padded,
+                                                                                                        text_lengths,
+                                                                                                        mel_lengths)
+            mel_loss, bce_loss, guide_loss = criterion((mel_out, mel_out_post, gate_out),
+                                                       (mel_padded, gate_padded),
+                                                       (enc_dec_alignments, text_lengths, mel_lengths))
+
+            sub_loss = (mel_loss+bce_loss+guide_loss)/hparams.accumulation
             sub_loss.backward()
             loss = loss + sub_loss.item()
 
@@ -101,26 +124,51 @@ def main():
                 model.zero_grad()
                 writer.add_scalar('lr', optimizer.param_groups[0]['lr'],
                                   global_step=iteration//hparams.accumulation)
-                writer.add_scalar('train_loss', loss,
+                writer.add_scalar('mel_loss', mel_loss.item(),
                                   global_step=iteration//hparams.accumulation)
-                writer.add_scalar('alpha1', alpha1,
+                writer.add_scalar('bce_loss', bce_loss.item(),
                                   global_step=iteration//hparams.accumulation)
-                writer.add_scalar('alpha2', alpha2,
+                writer.add_scalar('guide_loss', guide_loss.item(),
                                   global_step=iteration//hparams.accumulation)
                 loss=0
 
 
             if iteration%(hparams.iters_per_plot*hparams.accumulation)==0:
-                fig = plot_image(mel_padded,
-                                 mel_out_post,
-                                 mel_out,
-                                 alignments,
-                                 text_padded,
-                                 mel_lengths,
-                                 text_lengths)
-                writer.add_figure('Train plots', fig,
+                mel_fig = plot_melspec(mel_padded,
+                                       mel_out,
+                                       mel_out_post,
+                                       mel_lengths,
+                                       text_lengths)
+                writer.add_figure('Train melspec', mel_fig,
                                   global_step=iteration//hparams.accumulation)
-                writer.flush()
+
+                enc_align_fig = plot_alignments(enc_alignments,
+                                                text_padded,
+                                                mel_lengths,
+                                                text_lengths,
+                                               'enc')
+                writer.add_figure('Train enc_alignments', enc_align_fig,
+                                  global_step=iteration//hparams.accumulation)
+
+                dec_align_fig = plot_alignments(dec_alignments,
+                                                text_padded,
+                                                mel_lengths,
+                                                text_lengths,
+                                               'dec')
+                writer.add_figure('Train dec_alignments', dec_align_fig,
+                                  global_step=iteration//hparams.accumulation)
+
+                enc_dec_align_fig = plot_alignments(enc_dec_alignments,
+                                                    text_padded,
+                                                    mel_lengths,
+                                                    text_lengths,
+                                                   'enc_dec')
+                writer.add_figure('Train enc_dec_alignments', enc_dec_align_fig,
+                                  global_step=iteration//hparams.accumulation)
+                
+                gate_fig = plot_gate(gate_out)
+                writer.add_figure('Train gate_out', gate_fig,
+                                  global_step=iteration//hparams.accumulation)
 
 
             if iteration%(hparams.iters_per_checkpoint*hparams.accumulation)==0:
@@ -141,6 +189,7 @@ if __name__ == '__main__':
     p = argparse.ArgumentParser()
     p.add_argument('--gpu', type=str, default='0')
     args = p.parse_args()
+    
     os.environ["CUDA_VISIBLE_DEVICES"]=args.gpu
     
     torch.manual_seed(hparams.seed)

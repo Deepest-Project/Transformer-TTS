@@ -3,6 +3,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from init_layer import *
 from transformer import *
+from utils import get_mask_from_lengths
 
 
 class CBAD(nn.Module):
@@ -40,7 +41,6 @@ class CBAD(nn.Module):
         out = self.dropout(x)
 
         return out
-
 
 class Prenet_E(nn.Module):
     def __init__(self, hp):
@@ -82,15 +82,14 @@ class Prenet_E(nn.Module):
 
         return out
 
-
 class Prenet_D(nn.Module):
     def __init__(self, hp):
         super(Prenet_D, self).__init__()
         self.linear1 = Linear(hp.n_mel_channels,
-                              hp.hidden_dim,
+                              hp.dprenet_dim,
                               w_init_gain='relu')
-        self.linear2 = Linear(hp.hidden_dim, hp.hidden_dim, w_init_gain='relu')
-        self.linear3 = Linear(hp.hidden_dim, hp.hidden_dim)
+        self.linear2 = Linear(hp.dprenet_dim, hp.dprenet_dim, w_init_gain='relu')
+        self.linear3 = Linear(hp.dprenet_dim, hp.hidden_dim)
 
     def forward(self, x):
         # Set training==True following tacotron2
@@ -104,31 +103,31 @@ class PostNet(nn.Module):
     def __init__(self, hp):
         super(PostNet, self).__init__()
         self.conv1 = CBAD(in_dim=hp.n_mel_channels,
-                          out_dim=hp.hidden_dim,
+                          out_dim=hp.postnet_dim,
                           kernel_size=5,
                           stride=1,
                           padding=2,
                           bias=False,
                           activation='tanh',
                           dropout=0.5)
-        self.conv2 = CBAD(in_dim=hp.hidden_dim,
-                          out_dim=hp.hidden_dim,
+        self.conv2 = CBAD(in_dim=hp.postnet_dim,
+                          out_dim=hp.postnet_dim,
                           kernel_size=5,
                           stride=1,
                           padding=2,
                           bias=False,
                           activation='tanh',
                           dropout=0.5)
-        self.conv3 = CBAD(in_dim=hp.hidden_dim,
-                          out_dim=hp.hidden_dim,
+        self.conv3 = CBAD(in_dim=hp.postnet_dim,
+                          out_dim=hp.postnet_dim,
                           kernel_size=5,
                           stride=1,
                           padding=2,
                           bias=False,
                           activation='tanh',
                           dropout=0.5)
-        self.conv4 = CBAD(in_dim=hp.hidden_dim,
-                          out_dim=hp.hidden_dim,
+        self.conv4 = CBAD(in_dim=hp.postnet_dim,
+                          out_dim=hp.postnet_dim,
                           kernel_size=5,
                           stride=1,
                           padding=2,
@@ -136,7 +135,7 @@ class PostNet(nn.Module):
                           activation='tanh',
                           dropout=0.5)
         self.conv5 = nn.Sequential(
-            nn.Conv1d(hp.hidden_dim,
+            nn.Conv1d(hp.postnet_dim,
                       hp.n_mel_channels,
                       kernel_size=5,
                       padding=2,
@@ -159,15 +158,16 @@ class Model(nn.Module):
         super(Model, self).__init__()
         self.hp = hp
         self.Embedding = nn.Embedding(hp.n_symbols, hp.symbols_embedding_dim)
+        self.Dropout = nn.Dropout(0.1)
         self.Prenet_E = Prenet_E(hp)
         self.Prenet_D = Prenet_D(hp)
         self.pe = PositionalEncoding(hp.hidden_dim).pe
         self.alpha1 = nn.Parameter(torch.ones(1))
         self.alpha2 = nn.Parameter(torch.ones(1))
 
-        self.Encoder = nn.ModuleList([FFTblock(d_model=hp.hidden_dim,
-                                               nhead=hp.n_heads,
-                                               dim_feedforward=hp.ff_dim)
+        self.Encoder = nn.ModuleList([TransformerEncoderLayer(d_model=hp.hidden_dim,
+                                                              nhead=hp.n_heads,
+                                                              dim_feedforward=hp.ff_dim)
                                       for _ in range(hp.n_layers)])
 
         self.Decoder = nn.ModuleList([TransformerDecoderLayer(d_model=hp.hidden_dim,
@@ -177,27 +177,27 @@ class Model(nn.Module):
 
         self.Projection = Linear(hp.hidden_dim, hp.n_mel_channels)
         self.Postnet = PostNet(hp)
-
+        self.Stop = nn.Linear(hp.n_mel_channels, 1)
         
     def forward(self, text, melspec, text_lengths=None, mel_lengths=None):
         ### Size ###
-        B, L = text.size()
-        T = melspec.size(2)
+        B, L, T = text.size(0), text_lengths.max().item(), mel_lengths.max().item()
         
         ### Positional embedding ###
         position_embedding = text.new_tensor(self.pe, dtype=torch.float)
         
         ### Prepare Encoder Input ###
         embedded_input = self.Embedding(text)
-        encoder_input = self.Prenet_E(embedded_input).transpose(0,1).contiguous()
+        #encoder_input = self.Prenet_E(embedded_input).transpose(0,1).contiguous()
+        encoder_input = embedded_input.transpose(0,1).contiguous()
         encoder_input += self.alpha1*position_embedding[:L].unsqueeze(1)
+        encoder_input = self.Dropout(encoder_input)
 
         ### Prepare Decoder Input ###
-        mel_input = torch.clamp((melspec-self.hp.ref_level_db)/-self.hp.min_level_db,
-                                -1.0, 0.0) + 1.0
-        mel_input = F.pad(mel_input, (1,-1)).transpose(1,2).contiguous()
+        mel_input = F.pad(melspec, (1,-1)).transpose(1,2).contiguous()
         decoder_input = self.Prenet_D(mel_input).transpose(0,1).contiguous()
         decoder_input += self.alpha2*position_embedding[:T].unsqueeze(1)
+        decoder_input = self.Dropout(decoder_input)
 
         ### Prepare Masks ###
         text_mask = get_mask_from_lengths(text_lengths)
@@ -208,43 +208,47 @@ class Model(nn.Module):
 
         ### Transformer Encoder ###
         memory = encoder_input
+        enc_alignments = []
         for layer in self.Encoder:
-            memory = layer(memory, src_key_padding_mask=text_mask)
+            memory, enc_align = layer(memory, src_key_padding_mask=text_mask)
+            enc_alignments.append(enc_align.unsqueeze(1))
+        enc_alignments = torch.cat(enc_alignments, 1)
 
         ### Transformer Decoder ###
-        tgt, alignments = decoder_input, []
+        tgt = decoder_input
+        dec_alignments, enc_dec_alignments = [], []
         for layer in self.Decoder:
-            tgt, alignment = layer(tgt,
-                                   memory,
-                                   tgt_mask=diag_mask,
-                                   tgt_key_padding_mask=mel_mask,
-                                   memory_key_padding_mask=text_mask)
-            alignments.append(alignment)
+            tgt, dec_align, enc_dec_align = layer(tgt,
+                                                  memory,
+                                                  tgt_mask=diag_mask,
+                                                  tgt_key_padding_mask=mel_mask,
+                                                  memory_key_padding_mask=text_mask)
+            dec_alignments.append(dec_align.unsqueeze(1))
+            enc_dec_alignments.append(enc_dec_align.unsqueeze(1))
+        dec_alignments = torch.cat(dec_alignments, 1)
+        enc_dec_alignments = torch.cat(enc_dec_alignments, 1)
 
         mel_out = self.Projection(tgt.transpose(0, 1).contiguous())
         mel_out_post = self.Postnet(mel_out.transpose(1, 2).contiguous())
         mel_out_post = mel_out_post.transpose(1,2).contiguous() + mel_out
-        
-        mel_out = mel_out.masked_fill_(mel_mask.unsqueeze(-1), 0)
-        mel_out_post = mel_out_post.masked_fill_(mel_mask.unsqueeze(-1), 0)
 
+        gate_out = self.Stop(mel_out).squeeze(-1)
+        
         mel_out = mel_out.transpose(1, 2).contiguous()
         mel_out_post = mel_out_post.transpose(1, 2).contiguous()
         
-        return mel_out, mel_out_post, alignments, self.alpha1, self.alpha2
+        return mel_out, mel_out_post, enc_alignments, dec_alignments, enc_dec_alignments, gate_out
 
     
     def inference(self, text, max_len=1024):
         ### Size & Length ###
-        text_lengths = torch.tensor([1, text.size(1)])
-        mel_lengths = torch.tensor([1, max_len])
-        
         B, L = text.size()
         T = max_len
 
         ### Prepare Inputs ###
         embedded_input = self.Embedding(text)
-        encoder_input = self.Prenet_E(embedded_input).transpose(0,1).contiguous()
+        #encoder_input = self.Prenet_E(embedded_input).transpose(0,1).contiguous()
+        encoder_input = embedded_input.transpose(0,1).contiguous()
         encoder_input += self.alpha1*text.new_tensor(self.pe[:L], dtype=torch.float).unsqueeze(1)
 
         ### Prepare Masks ###
@@ -256,18 +260,26 @@ class Model(nn.Module):
 
         ### Transformer Encoder ###
         memory = encoder_input
+        enc_alignments = []
         for layer in self.Encoder:
-            memory = layer(memory, src_key_padding_mask=text_mask)
+            memory, enc_align = layer(memory, src_key_padding_mask=text_mask)
+            enc_alignments.append(enc_align)
+        enc_alignments = torch.cat(enc_alignments, dim=0)
 
         ### Transformer Decoder ###
         mel_input = text.new_zeros(1,
                                    self.hp.n_mel_channels,
                                    max_len).to(torch.float32)
-        alignments = text.new_zeros(self.hp.n_layers,
-                                    self.hp.n_heads,
-                                    max_len,
-                                    text.size(1)).to(torch.float32)
+        dec_alignments = text.new_zeros(self.hp.n_layers,
+                                        self.hp.n_heads,
+                                        max_len,
+                                        max_len).to(torch.float32)
+        enc_dec_alignments = text.new_zeros(self.hp.n_layers,
+                                            self.hp.n_heads,
+                                            max_len,
+                                            text.size(1)).to(torch.float32)
 
+        stop=[]
         for i in range(max_len):
             tgt = self.Prenet_D(mel_input.transpose(1,2).contiguous())
             tgt = tgt.transpose(0,1).contiguous()
@@ -275,28 +287,25 @@ class Model(nn.Module):
                                               dtype=torch.float).unsqueeze(1)
 
             for j, layer in enumerate(self.Decoder):
-                tgt, alignment = layer(tgt,
-                                       memory,
-                                       tgt_mask=diag_mask,
-                                       tgt_key_padding_mask=mel_mask,
-                                       memory_key_padding_mask=text_mask)
-                alignments[j, :, i] = alignment[0, :, i]
+                tgt, dec_align, enc_dec_align = layer(tgt,
+                                                      memory,
+                                                      tgt_mask=diag_mask,
+                                                      tgt_key_padding_mask=mel_mask,
+                                                      memory_key_padding_mask=text_mask)
+                dec_alignments[j, :, i] = dec_align[0, :, i]
+                enc_dec_alignments[j, :, i] = enc_dec_align[0, :, i]
 
             mel_out = self.Projection(tgt.transpose(0,1).contiguous())
+            stop.append(torch.sigmoid(self.Stop(mel_out[:,i]))[0,0].item())
 
             if i < max_len - 1:
-                next_step = torch.clamp((mel_out[0, i]-self.hp.ref_level_db)/-self.hp.min_level_db,
-                                        -1.0, 0.0) + 1.0
-                mel_input[0, :, i + 1] = next_step
+                mel_input[0, :, i+1] = mel_out[0, i]
+                
+            if stop[-1]>0.001:
+                break
 
         mel_out_post = self.Postnet(mel_out.transpose(1, 2).contiguous())
         mel_out_post = mel_out_post.transpose(1, 2).contiguous() + mel_out
+        mel_out_post = mel_out_post.transpose(1, 2).contiguous()
 
-        return mel_out_post.transpose(1, 2).contiguous(), alignments
-
-
-def get_mask_from_lengths(lengths):
-    max_len = torch.max(lengths).item()
-    ids = lengths.new_tensor(torch.arange(0, max_len))
-    mask = (lengths.unsqueeze(1) <= ids).to(torch.bool)
-    return mask
+        return mel_out_post, enc_alignments, dec_alignments, enc_dec_alignments, stop

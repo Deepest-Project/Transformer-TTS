@@ -1,6 +1,6 @@
 # Transformer-TTS
 - Implementation of ["Neural Speech Synthesis with Transformer Network"](https://arxiv.org/abs/1809.08895)  
-- This is implemented for [FastSpeech](https://github.com/Deepest-Project/FastSpeech), so I use the `FFTblock` as an encoder.
+- This is implemented for [FastSpeech](https://github.com/Deepest-Project/FastSpeech)  
 
 
 ## Training  
@@ -10,10 +10,25 @@
 4. Using `prepare_data.ipynb`, prepare melspectrogram and text (converted into indices) tensors.  
 5. `python train.py --gpu='0'`  
 
+## Training curve  
+- Stop prediction loss (train / val)  
+<img src="figures/bce_loss.JPG" height="200"> <img src="figures/val_bce_loss.JPG" height="200">  
+- Guided attention loss (train / val)    
+<img src="figures/guide_loss.JPG" height="200"> <img src="figures/val_guide_loss.JPG" height="200">  
+- L1 loss (train / val)    
+<img src="figures/l1_loss.JPG" height="200"> <img src="figures/val_l1_loss.JPG" height="200">  
 
-## Training curves (blue: batch_size:64 / orange: batch_size:32 / red: batch_size:16)  
-<img src="figures/alpha1.JPG" height="200"> <img src="figures/alpha2.JPG" height="200">  
-<img src="figures/train_loss.JPG" height="200"> <img src="figures/val_loss.JPG" height="200">  
+## Alignments  
+- Encoder Alignments  
+<img src="figures/enc_alignments.JPG" height="600">  
+- Decoder Alignments  
+<img src="figures/dec_alignments.JPG" height="600">  
+- Encoder-Decoder Alignments  
+<img src="figures/enc_dec_alignments.JPG" height="600">  
+- Melspectrogram (target / before / after POSTNET)  
+<img src="figures/melspec.JPG" height="600">  
+- Stop prediction  
+<img src="figures/stop_prediction.JPG" height="200">  
 
 
 ## Training plots (blue: batch_size:64 / orange: batch_size:32 / red: batch_size:16)  
@@ -25,16 +40,12 @@
 You can hear the audio samples [here](https://deepest-project.github.io/Transformer-TTS/)
 
 ## Notice  
-1. Unlike the original paper, I didn't use the stop token prediction
-2. I use additional ["guided attention loss"](https://arxiv.org/pdf/1710.08969.pdf) with a coefficient `10`
-3. Batch size is important, so I use gradient accumulation (batch_size: 64 succeed / 32 failed)  
-4. Only when concatenating the input and output of the MultiheadAttention layer, the model learns diagonal alignments   
-5. Although the losses of the batch_size=32 at 200K was similar or lower than those of the batch_size=64 at 100K,  
-   only 64 works!!!  
+1. Unlike the original paper, I didn't use the encoder-prenet following [espnet](https://github.com/espnet/espnet)  
+2. I use additional ["guided attention loss"](https://arxiv.org/pdf/1710.08969.pdf)  
+3. Batch size is important, so I use gradient accumulation  
 
 ## TODO
-1. Weighted Stop token prediction  
-2. Dynamic batch  
+1. Dynamic batch  
 
 ## Fastspeech  
 1. For fastspeech, generated melspectrograms and attention matrix should be saved for later.  
@@ -49,9 +60,7 @@ return attn_output, attn_output_weights.sum(dim=1) / num_heads
 #after  
 return attn_output, attn_output_weights
 ```  
-3. Among `num_layers*num_heads` attention matrices, the one with the highest focus rate is saved.
-4. Only the data that meets the below condition is used in fastspeech:  
-  - `The differences between attended phoneme positions for adjacent melspectrogram steps are lower than two`  
+3. Among `num_layers*num_heads` attention matrices, the one with the highest focus rate is saved.  
 
 ## Reference
 1.NVIDIA/tacotron2: https://github.com/NVIDIA/tacotron2  

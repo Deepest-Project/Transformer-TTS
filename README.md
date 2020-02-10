@@ -21,13 +21,13 @@
 ## Alignments  
 - Encoder Alignments  
 <img src="figures/enc_alignments.JPG" height="600">  
-- Stop prediction loss (train / val)  
-<img src="figures/dec_alignments.JPG" height="200">  
-- Stop prediction loss (train / val)  
-<img src="figures/enc_dec_alignments.JPG" height="200">  
-- Stop prediction loss (train / val)  
+- Decoder Alignments  
+<img src="figures/dec_alignments.JPG" height="600">  
+- Encoder-Decoder Alignments  
+<img src="figures/enc_dec_alignments.JPG" height="600">  
+- Melspectrogram (target / before / after POSTNET)  
 <img src="figures/melspec.JPG" height="200">  
-- Stop prediction loss (train / val)  
+- Stop prediction  
 <img src="figures/stop_prediction.JPG" height="200">  
 
 ## Audio Samples    

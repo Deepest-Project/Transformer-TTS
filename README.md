@@ -11,8 +11,11 @@
 
 
 ## Training curve  
+- Stop prediction loss (train / val)  
 <img src="figures/bce_loss.JPG" height="200"> <img src="figures/val_bce_loss.JPG" height="200">  
+- Guided attention loss (train / val)    
 <img src="figures/guide_loss.JPG" height="200"> <img src="figures/val_guide_loss.JPG" height="200">  
+- L1 loss (train / val)    
 <img src="figures/l1_loss.JPG" height="200"> <img src="figures/val_l1_loss.JPG" height="200">  
 
 ## Alignments  

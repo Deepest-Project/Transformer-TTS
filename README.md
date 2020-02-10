@@ -26,7 +26,7 @@
 - Encoder-Decoder Alignments  
 <img src="figures/enc_dec_alignments.JPG" height="600">  
 - Melspectrogram (target / before / after POSTNET)  
-<img src="figures/melspec.JPG" height="200">  
+<img src="figures/melspec.JPG" height="600">  
 - Stop prediction  
 <img src="figures/stop_prediction.JPG" height="200">  
 

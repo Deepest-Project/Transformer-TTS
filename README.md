@@ -11,7 +11,16 @@
 
 
 ## Training curve  
+<img src="figures/bce_loss.JPG" height="200"> <img src="figures/val_bce_loss.JPG" height="200">  
+<img src="figures/guide_loss.JPG" height="200"> <img src="figures/val_guide_loss.JPG" height="200">  
+<img src="figures/l1_loss.JPG" height="200"> <img src="figures/val_l1_loss.JPG" height="200">  
 
+## Alignments  
+<img src="figures/enc_alignments.JPG" height="200">  
+<img src="figures/dec_alignments.JPG" height="200">  
+<img src="figures/enc_dec_alignments.JPG" height="200">  
+<img src="figures/melspec.JPG" height="200">  
+<img src="figures/stop_prediction.JPG" height="200">  
 
 ## Audio Samples    
 

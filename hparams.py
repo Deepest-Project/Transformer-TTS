@@ -8,7 +8,7 @@ seed=1234
 output_directory = 'training_log'
 log_directory = 'waveglow_char'
 data_path = '/media/disk1/lyh/LJSpeech-1.1/waveglow'
-teacher_path = '/media/disk1/lyh/fastspeech'
+teacher_path = '/media/disk1/lyh/fastspeech_char'
 
 training_files='filelists/ljs_audio_text_train_filelist.txt'
 validation_files='filelists/ljs_audio_text_val_filelist.txt'

@@ -26,7 +26,7 @@ def text_to_sequence(text, cleaner_names):
     Returns:
       List of integers corresponding to the symbols in the text
   '''
-  sequence = []
+  sequence = [_symbol_to_id['^']]
 
   # Check for curly braces and treat their contents as ARPAbet:
   while len(text):

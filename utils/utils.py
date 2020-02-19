@@ -1,6 +1,6 @@
 import hparams
 from torch.utils.data import DataLoader
-from data_utils import TextMelSet, TextMelCollate
+from .data_utils import TextMelSet, TextMelCollate
 import torch
 from text import *
 import matplotlib.pyplot as plt
@@ -13,14 +13,14 @@ def prepare_dataloaders(hparams):
     collate_fn = TextMelCollate()
 
     train_loader = DataLoader(trainset,
-                              num_workers=3,
+                              num_workers=hparams.n_gpus-1,
                               shuffle=True,
                               batch_size=hparams.batch_size, 
                               drop_last=True, 
                               collate_fn=collate_fn)
     
     val_loader = DataLoader(valset,
-                            batch_size=hparams.batch_size,
+                            batch_size=hparams.batch_size//hparams.n_gpus,
                             collate_fn=collate_fn)
     
     return train_loader, val_loader, collate_fn
@@ -44,3 +44,14 @@ def get_mask_from_lengths(lengths):
     ids = lengths.new_tensor(torch.arange(0, max_len))
     mask = (lengths.unsqueeze(1) <= ids).to(torch.bool)
     return mask
+
+
+def reorder_batch(x, n_gpus):
+    assert (x.size(0)%n_gpus)==0, 'Batch size must be a multiple of the number of GPUs.'
+    new_x = x.new_zeros(x.size())
+    chunk_size = x.size(0)//n_gpus
+    
+    for i in range(n_gpus):
+        new_x[i::n_gpus] = x[i*chunk_size:(i+1)*chunk_size]
+    
+    return new_x

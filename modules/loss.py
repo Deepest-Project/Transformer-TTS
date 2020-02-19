@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
-from utils import get_mask_from_lengths
+from utils.utils import get_mask_from_lengths
+
 
 class TransformerLoss(nn.Module):
     def __init__(self):
@@ -35,15 +36,14 @@ class TransformerLoss(nn.Module):
         mask = alignments.new_zeros(B, T, L)
         
         for i, (t, l) in enumerate(zip(mel_lengths, text_lengths)):
-            mel_seq = torch.arange(t).to(torch.float32).unsqueeze(-1)/t
-            text_seq = torch.arange(l).to(torch.float32).unsqueeze(0)/l
+            mel_seq = alignments.new_tensor( torch.arange(t).to(torch.float32).unsqueeze(-1)/t )
+            text_seq = alignments.new_tensor( torch.arange(l).to(torch.float32).unsqueeze(0)/l )
             x = torch.pow(mel_seq-text_seq, 2)
             W[i, :t, :l] += alignments.new_tensor(1-torch.exp(-3.125*x))
             mask[i, :t, :l] = 1
         
+        # Apply guided_loss to 2 heads of the last 2 layers 
         applied_align = alignments[:, -2:, :2]
         losses = applied_align*(W.unsqueeze(1).unsqueeze(1))
         
         return torch.mean(losses.masked_select(mask.unsqueeze(1).unsqueeze(1).to(torch.bool)))
-
- 

@@ -2,14 +2,14 @@ import os, argparse
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from model import Model
+from modules.model import Model
+from modules.loss import TransformerLoss
 import hparams
 import random
 from text import *
-from torch.utils.tensorboard import SummaryWriter
-from loss import TransformerLoss
-from plot_image import *
-from utils import prepare_dataloaders, save_checkpoint, lr_scheduling
+from utils.plot_image import *
+from utils.utils import *
+from utils.writer import get_writer
 
 
 def validate(model, criterion, val_loader, iteration, writer):
@@ -21,80 +21,57 @@ def validate(model, criterion, val_loader, iteration, writer):
             text_padded, text_lengths, mel_padded, mel_lengths, gate_padded = [
                 x.cuda() for x in batch
             ]
-            mel_out, mel_out_post, enc_alignments, dec_alignments, enc_dec_alignments, gate_out = model(text_padded,
-                                                                                                        mel_padded,
-                                                                                                        text_lengths,
-                                                                                                        mel_lengths)
-
+            
+            mel_out, mel_out_post,\
+            enc_alignments, dec_alignments, enc_dec_alignments, gate_out = model.module.outputs(text_padded,
+                                                                                                mel_padded,
+                                                                                                text_lengths,
+                                                                                                mel_lengths)
+        
             mel_loss, bce_loss, guide_loss = criterion((mel_out, mel_out_post, gate_out),
                                                        (mel_padded, gate_padded),
                                                        (enc_dec_alignments, text_lengths, mel_lengths))
-            loss = mel_loss+bce_loss+guide_loss
+            
+            loss = torch.mean(mel_loss+bce_loss+guide_loss)
             val_loss += loss.item() * len(batch[0])
 
         val_loss /= n_data
 
-    writer.add_scalar('val_mel_loss', mel_loss.item(),
-                      global_step=iteration//hparams.accumulation)
-    writer.add_scalar('val_bce_loss', bce_loss.item(),
-                      global_step=iteration//hparams.accumulation)
-    writer.add_scalar('val_guide_loss', guide_loss.item(),
-                      global_step=iteration//hparams.accumulation)
+    writer.add_losses(mel_loss.item(),
+                      bce_loss.item(),
+                      guide_loss.item(),
+                      iteration//hparams.accumulation, 'Validation')
     
-    mel_fig = plot_melspec(mel_padded,
-                           mel_out,
-                           mel_out_post,
-                           mel_lengths,
-                           text_lengths)
-    writer.add_figure('Validation melspec', mel_fig,
-                      global_step=iteration//hparams.accumulation)
-
-    enc_align_fig = plot_alignments(enc_alignments,
-                                    text_padded,
-                                    mel_lengths,
-                                    text_lengths,
-                                   'enc')
-    writer.add_figure('Validation enc_alignments', enc_align_fig,
-                      global_step=iteration//hparams.accumulation)
-
-    dec_align_fig = plot_alignments(dec_alignments,
-                                    text_padded,
-                                    mel_lengths,
-                                    text_lengths,
-                                   'dec')
-    writer.add_figure('Validation dec_alignments', dec_align_fig,
-                      global_step=iteration//hparams.accumulation)
-
-    enc_dec_align_fig = plot_alignments(enc_dec_alignments,
-                                        text_padded,
-                                        mel_lengths,
-                                        text_lengths,
-                                       'enc_dec')
-    writer.add_figure('Validation enc_dec_alignments', enc_dec_align_fig,
-                      global_step=iteration//hparams.accumulation)
+    writer.add_specs(mel_padded.detach().cpu(),
+                     mel_out.detach().cpu(),
+                     mel_out_post.detach().cpu(),
+                     mel_lengths.detach().cpu(),
+                     iteration//hparams.accumulation, 'Validation')
     
-    gate_fig = plot_gate(gate_out)
-    writer.add_figure('Validation gate_out', gate_fig,
-                      global_step=iteration//hparams.accumulation)
+    writer.add_alignments(enc_alignments.detach().cpu(),
+                          dec_alignments.detach().cpu(),
+                          enc_dec_alignments.detach().cpu(),
+                          text_padded.detach().cpu(),
+                          mel_lengths.detach().cpu(),
+                          text_lengths.detach().cpu(),
+                          iteration//hparams.accumulation, 'Validation')
     
+    writer.add_gates(gate_out.detach().cpu(),
+                    iteration//hparams.accumulation, 'Validation')
     model.train()
+    
+    
     
 def main():
     train_loader, val_loader, collate_fn = prepare_dataloaders(hparams)
-
-    model = Model(hparams).cuda()
+    model = nn.DataParallel(Model(hparams)).cuda()
     optimizer = torch.optim.Adam(model.parameters(),
                                  lr=hparams.lr,
                                  betas=(0.9, 0.98),
                                  eps=1e-09)
     criterion = TransformerLoss()
+    writer = get_writer(hparams.output_directory, hparams.log_directory)
 
-    logging_path=f'{hparams.output_directory}/{hparams.log_directory}'
-    if os.path.exists(logging_path):
-        raise Exception('The experiment already exists')
-    else:
-        os.mkdir(logging_path)
-        writer = SummaryWriter(logging_path)
 
     iteration, loss = 0, 0
     model.train()
@@ -102,97 +79,62 @@ def main():
     while iteration < (hparams.train_steps*hparams.accumulation):
         for i, batch in enumerate(train_loader):
             text_padded, text_lengths, mel_padded, mel_lengths, gate_padded = [
-                x.cuda() for x in batch
+                reorder_batch(x, hparams.n_gpus).cuda() for x in batch
             ]
-            mel_out, mel_out_post, enc_alignments, dec_alignments, enc_dec_alignments, gate_out = model(text_padded,
-                                                                                                        mel_padded,
-                                                                                                        text_lengths,
-                                                                                                        mel_lengths)
-            mel_loss, bce_loss, guide_loss = criterion((mel_out, mel_out_post, gate_out),
-                                                       (mel_padded, gate_padded),
-                                                       (enc_dec_alignments, text_lengths, mel_lengths))
 
+            mel_loss, bce_loss, guide_loss = model(text_padded,
+                                                   mel_padded,
+                                                   gate_padded,
+                                                   text_lengths,
+                                                   mel_lengths,
+                                                   criterion)
+
+            mel_loss, bce_loss, guide_loss=[
+                torch.mean(x) for x in [mel_loss, bce_loss, guide_loss]
+            ]
             sub_loss = (mel_loss+bce_loss+guide_loss)/hparams.accumulation
             sub_loss.backward()
-            loss = loss + sub_loss.item()
+            loss = loss+sub_loss.item()
 
             iteration += 1
             if iteration%hparams.accumulation == 0:
                 lr_scheduling(optimizer, iteration//hparams.accumulation)
-                torch.nn.utils.clip_grad_norm_(model.parameters(), hparams.grad_clip_thresh)
+                nn.utils.clip_grad_norm_(model.parameters(), hparams.grad_clip_thresh)
                 optimizer.step()
                 model.zero_grad()
-                writer.add_scalar('lr', optimizer.param_groups[0]['lr'],
-                                  global_step=iteration//hparams.accumulation)
-                writer.add_scalar('mel_loss', mel_loss.item(),
-                                  global_step=iteration//hparams.accumulation)
-                writer.add_scalar('bce_loss', bce_loss.item(),
-                                  global_step=iteration//hparams.accumulation)
-                writer.add_scalar('guide_loss', guide_loss.item(),
-                                  global_step=iteration//hparams.accumulation)
+                writer.add_losses(mel_loss.item(),
+                                  bce_loss.item(),
+                                  guide_loss.item(),
+                                  iteration//hparams.accumulation, 'Train')
                 loss=0
 
 
-            if iteration%(hparams.iters_per_plot*hparams.accumulation)==0:
-                mel_fig = plot_melspec(mel_padded,
-                                       mel_out,
-                                       mel_out_post,
-                                       mel_lengths,
-                                       text_lengths)
-                writer.add_figure('Train melspec', mel_fig,
-                                  global_step=iteration//hparams.accumulation)
-
-                enc_align_fig = plot_alignments(enc_alignments,
-                                                text_padded,
-                                                mel_lengths,
-                                                text_lengths,
-                                               'enc')
-                writer.add_figure('Train enc_alignments', enc_align_fig,
-                                  global_step=iteration//hparams.accumulation)
-
-                dec_align_fig = plot_alignments(dec_alignments,
-                                                text_padded,
-                                                mel_lengths,
-                                                text_lengths,
-                                               'dec')
-                writer.add_figure('Train dec_alignments', dec_align_fig,
-                                  global_step=iteration//hparams.accumulation)
-
-                enc_dec_align_fig = plot_alignments(enc_dec_alignments,
-                                                    text_padded,
-                                                    mel_lengths,
-                                                    text_lengths,
-                                                   'enc_dec')
-                writer.add_figure('Train enc_dec_alignments', enc_dec_align_fig,
-                                  global_step=iteration//hparams.accumulation)
-                
-                gate_fig = plot_gate(gate_out)
-                writer.add_figure('Train gate_out', gate_fig,
-                                  global_step=iteration//hparams.accumulation)
-
+            if iteration%(hparams.iters_per_validation*hparams.accumulation)==0:
+                validate(model, criterion, val_loader, iteration, writer)
 
             if iteration%(hparams.iters_per_checkpoint*hparams.accumulation)==0:
                 save_checkpoint(model,
                                 optimizer,
                                 hparams.lr,
                                 iteration//hparams.accumulation,
-                                filepath=logging_path)
-
+                                filepath=f'{hparams.output_directory}/{hparams.log_directory}')
 
             if iteration==(hparams.train_steps*hparams.accumulation):
                 break
 
-        validate(model, criterion, val_loader, iteration, writer)
 
-    
 if __name__ == '__main__':
     p = argparse.ArgumentParser()
-    p.add_argument('--gpu', type=str, default='0')
+    p.add_argument('--gpu', type=str, default='0,1')
+    p.add_argument('-v', '--verbose', type=str, default='0')
     args = p.parse_args()
     
     os.environ["CUDA_VISIBLE_DEVICES"]=args.gpu
-    
     torch.manual_seed(hparams.seed)
     torch.cuda.manual_seed(hparams.seed)
     
+    if args.verbose=='0':
+        import warnings
+        warnings.filterwarnings("ignore")
+        
     main()

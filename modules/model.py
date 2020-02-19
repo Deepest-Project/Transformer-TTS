@@ -6,7 +6,6 @@ from .transformer import *
 from utils.utils import get_mask_from_lengths
 
 
-
 class CBAD(nn.Module):
     def __init__(self,
                  in_dim,
@@ -109,7 +108,7 @@ class Model(nn.Module):
         self.alpha1 = nn.Parameter(torch.ones(1))
         self.alpha2 = nn.Parameter(torch.ones(1))
         self.register_buffer('pe', PositionalEncoding(hp.hidden_dim).pe)
-        self.dropout=nn.Dropout(0.1)
+        self.dropout = nn.Dropout(0.1)
         
         self.Encoder = nn.ModuleList([TransformerEncoderLayer(d_model=hp.hidden_dim,
                                                               nhead=hp.n_heads,

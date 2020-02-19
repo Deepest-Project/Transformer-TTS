@@ -70,7 +70,6 @@ def main():
     criterion = TransformerLoss()
     writer = get_writer(hparams.output_directory, hparams.log_directory)
 
-
     iteration, loss = 0, 0
     model.train()
     print("Training Start!!!")

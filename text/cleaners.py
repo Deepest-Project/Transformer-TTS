@@ -121,4 +121,10 @@ def custom_english_cleaners(text):
     text = remove_unnecessary_symbols(text)
     text = uppercase(text)
     text = collapse_whitespace(text)
+    
+    # There is an exception (I found it!)
+    # "'NOW FOR YOU, MY POOR FELLOW MORTALS, WHO ARE ABOUT TO SUFFER THE LAST PENALTY OF THE LAW.'"
+    if text[0]=="'" and text[-1]=="'":
+        text = text[1:-1]
+        
     return text

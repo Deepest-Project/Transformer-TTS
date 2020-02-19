@@ -35,12 +35,6 @@
 - Stop prediction  
 <img src="figures/stop_prediction.JPG" height="200">  
 
-
-## Training plots (blue: batch_size:64 / orange: batch_size:32 / red: batch_size:16)  
-<img src="figures/train_plots.JPG" height="300">
-<img src="figures/val_plots.JPG" height="300">
-
-
 ## Audio Samples    
 You can hear the audio samples [here](https://deepest-project.github.io/Transformer-TTS/)
 

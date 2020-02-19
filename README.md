@@ -10,10 +10,10 @@
 
 ## Training  
 1. Download and extract the [LJ Speech dataset](https://keithito.com/LJ-Speech-Dataset/)  
-2. Make `preprocessed` folder in LJSpeech directory and make `sequence` & `melspectrogram` folder in the `preprocessed`    
+2. Make `preprocessed` folder in LJSpeech directory and make `char_seq` & `phone_seq` & `melspectrogram` folder in the `preprocessed`  
 3. Set `data_path` in `hparams.py` as the LJSpeech folder  
 4. Using `prepare_data.ipynb`, prepare melspectrogram and text (converted into indices) tensors.  
-5. `python train.py --gpu='0'`  
+5. `python train.py`  
 
 ## Training curve  
 - Stop prediction loss (train / val)  
@@ -40,8 +40,9 @@ You can hear the audio samples [here](https://deepest-project.github.io/Transfor
 
 ## Notice  
 1. Unlike the original paper, I didn't use the encoder-prenet following [espnet](https://github.com/espnet/espnet)  
-2. I use additional ["guided attention loss"](https://arxiv.org/pdf/1710.08969.pdf)  
+2. I apply additional ["guided attention loss"](https://arxiv.org/pdf/1710.08969.pdf) to the two heads of the last two layers  
 3. Batch size is important, so I use gradient accumulation  
+4. You can also use DataParallel. Change the `n_gpus`, `batch_size`, `accumulation` appropriately.  
 
 ## TODO
 1. Dynamic batch  
@@ -51,7 +52,7 @@ You can hear the audio samples [here](https://deepest-project.github.io/Transfor
 1-1. Set `teacher_path` in `hparams.py` and make `alignments` and `targets` directories there.  
 1-2. Using `prepare_fastspeech.ipynb`, prepare alignmetns and targets.  
   
-2. For later use in fastspeech, I change return values of the "torch.nn.functional.multi_head_attention_forward()"  
+2. To draw attention plots for every each head, I change return values of the "torch.nn.functional.multi_head_attention_forward()"  
 ```python
 #before
 return attn_output, attn_output_weights.sum(dim=1) / num_heads  

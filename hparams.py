@@ -6,9 +6,9 @@ from text import symbols
 seed=1234
 n_gpus=2
 output_directory = 'training_log'
-log_directory = 'transformer-tts-char'
+log_directory = 'transformer-tts-phone'
 data_path = '/media/disk1/lyh/LJSpeech-1.1/preprocessed'
-teacher_path = '/media/disk1/lyh/fastspeech_char'
+teacher_path = '/media/disk1/lyh/fastspeech_phone'
 
 training_files='filelists/ljs_audio_text_train_filelist.txt'
 validation_files='filelists/ljs_audio_text_val_filelist.txt'
@@ -30,7 +30,7 @@ mel_fmax=8000.0
 # Model Parameters             #
 ################################
 n_symbols=len(symbols)
-data_type='char_seq' # 'phone_seq'
+data_type='phone_seq' # 'phone_seq'
 symbols_embedding_dim=256
 hidden_dim=256
 dprenet_dim=256

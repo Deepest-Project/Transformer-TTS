@@ -36,7 +36,7 @@
 <img src="figures/gate_prediction.JPG" height="200">  
 
 ## Audio Samples    
-You can hear the audio samples [here](https://deepest-project.github.io/Transformer-TTS/)
+You can hear the audio samples [here](https://leeyoonhyung.github.io/Transformer-TTS/)
 
 ## Notice  
 1. Unlike the original paper, I didn't use the encoder-prenet following [espnet](https://github.com/espnet/espnet)  

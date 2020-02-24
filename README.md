@@ -17,11 +17,11 @@
 
 ## Training curve  
 - Stop prediction loss (train / val)  
-<img src="figures/bce_loss.JPG" height="200"> <img src="figures/val_bce_loss.JPG" height="200">  
+<img src="figures/train_bce_loss.JPG" height="200"> <img src="figures/val_bce_loss.JPG" height="200">  
 - Guided attention loss (train / val)    
-<img src="figures/guide_loss.JPG" height="200"> <img src="figures/val_guide_loss.JPG" height="200">  
+<img src="figures/train_guide_loss.JPG" height="200"> <img src="figures/val_guide_loss.JPG" height="200">  
 - L1 loss (train / val)    
-<img src="figures/l1_loss.JPG" height="200"> <img src="figures/val_l1_loss.JPG" height="200">  
+<img src="figures/train_mel_loss.JPG" height="200"> <img src="figures/val_mel_loss.JPG" height="200">  
 
 ## Alignments  
 - Encoder Alignments  
@@ -33,7 +33,7 @@
 - Melspectrogram (target / before / after POSTNET)  
 <img src="figures/melspec.JPG" height="600">  
 - Stop prediction  
-<img src="figures/stop_prediction.JPG" height="200">  
+<img src="figures/gate_prediction.JPG" height="200">  
 
 ## Audio Samples    
 You can hear the audio samples [here](https://deepest-project.github.io/Transformer-TTS/)

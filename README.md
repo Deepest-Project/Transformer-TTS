@@ -15,7 +15,7 @@
 4. Using `prepare_data.ipynb`, prepare melspectrogram and text (converted into indices) tensors.  
 5. `python train.py`  
 
-## Training curve  
+## Training curve (Orange: character / Blue: phoneme)  
 - Stop prediction loss (train / val)  
 <img src="figures/train_bce_loss.JPG" height="200"> <img src="figures/val_bce_loss.JPG" height="200">  
 - Guided attention loss (train / val)    
@@ -23,7 +23,7 @@
 - L1 loss (train / val)    
 <img src="figures/train_mel_loss.JPG" height="200"> <img src="figures/val_mel_loss.JPG" height="200">  
 
-## Alignments  
+## Alignments (Left: character / Right: phoneme)  
 - Encoder Alignments  
 <img src="figures/enc_alignments.JPG" height="600">  
 - Decoder Alignments  
@@ -36,7 +36,7 @@
 <img src="figures/gate_prediction.JPG" height="200">  
 
 ## Audio Samples    
-You can hear the audio samples [here](https://deepest-project.github.io/Transformer-TTS/)
+You can hear the audio samples [here](https://leeyoonhyung.github.io/Transformer-TTS/)
 
 ## Notice  
 1. Unlike the original paper, I didn't use the encoder-prenet following [espnet](https://github.com/espnet/espnet)  
